@@ -84,7 +84,7 @@ fastlane-nb-screenshot-localizer --fal-api-key=...
 | `--sequential` | One locale at a time (defaults to parallel). |
 | `--rate-limit <rpm>` | Provider-wide rate limit. Default: 10. |
 | `--manual <code>` | Mark a locale as designer-provided (repeatable). Skips API and copy phases; records existing screenshots in the ledger. |
-| `--people` | Adapt photographic people in the screenshot to the target locale. Affects only `ar-SA`, `es-MX`, `id`, `ja`, `ko`, `pt-BR`, `th`, `tr`, `vi`, `zh-Hans`. Tracked as a separate ledger variant, so toggling regenerates only those locales. |
+| `--people` | Adapt photographic people in the screenshot to the target locale. Affects only `ar-SA`, `es-MX`, `hi`, `id`, `ja`, `ko`, `ms`, `pt-BR`, `th`, `tr`, `vi`, `zh-Hans`, `zh-Hant`. Tracked as a separate ledger variant, so toggling regenerates only those locales. |
 | `--keep <term>` | Proper noun or brand name to leave untranslated (repeatable). Useful for app names, product names, or any term that should pass through verbatim. |
 | `--each-api-key <key>` | Use eachlabs with this key. |
 | `--fal-api-key <key>` | Use fal.ai with this key. |

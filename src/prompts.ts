@@ -44,8 +44,12 @@ export function buildPrompt(opts: BuildPromptOptions): string {
     prompt += ' Use natural Japanese with appropriate kanji, hiragana, and katakana.';
   } else if (localeCode === 'th') {
     prompt += ' Use natural Thai script with no spaces between words within a sentence.';
+  } else if (localeCode === 'hi') {
+    prompt += ' Use natural Hindi in Devanagari script.';
   } else if (localeCode === 'zh-Hans') {
     prompt += ' Use Simplified Chinese characters.';
+  } else if (localeCode === 'zh-Hant') {
+    prompt += ' Use Traditional Chinese characters.';
   }
 
   return prompt;
