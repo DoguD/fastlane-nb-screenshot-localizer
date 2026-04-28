@@ -1,0 +1,54 @@
+{
+  "name": "fastlane-nb-screenshot-localizer",
+  "version": "0.2.0",
+  "description": "Localize App Store screenshots in fastlane/ via Google's Nano Banana edit models. Supports both eachlabs.ai and fal.ai as providers.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DoguD/fastlane-nb-screenshot-localizer.git"
+  },
+  "homepage": "https://github.com/DoguD/fastlane-nb-screenshot-localizer#readme",
+  "bugs": {
+    "url": "https://github.com/DoguD/fastlane-nb-screenshot-localizer/issues"
+  },
+  "type": "module",
+  "bin": {
+    "fastlane-nb-screenshot-localizer": "./dist/cli.js"
+  },
+  "main": "./dist/localizer.js",
+  "types": "./dist/localizer.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/cli.js"
+  },
+  "keywords": [
+    "fastlane",
+    "screenshots",
+    "localization",
+    "i18n",
+    "app-store",
+    "nano-banana",
+    "eachlabs",
+    "fal",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  }
+}
