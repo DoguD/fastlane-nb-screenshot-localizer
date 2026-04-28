@@ -27,7 +27,7 @@ async function main(): Promise<void> {
       'Localize App Store screenshots in fastlane/ via Nano Banana edit models. ' +
         'Supports eachlabs.ai and fal.ai providers.',
     )
-    .version('0.2.0')
+    .version('0.3.0')
     .option('--pro', 'Use the pro model variant on the chosen provider', false)
     .option('--dry-run', 'Preview without making API calls or writing files', false)
     .option(

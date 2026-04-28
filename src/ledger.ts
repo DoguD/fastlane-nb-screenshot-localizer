@@ -40,6 +40,19 @@ export class Ledger {
     return (target.variant ?? 'default') === variant;
   }
 
+  getManualLocales(): Set<string> {
+    const out = new Set<string>();
+    for (const [locale, entries] of Object.entries(this.data.targets)) {
+      for (const entry of Object.values(entries)) {
+        if (entry.prediction_id === 'manual') {
+          out.add(locale);
+          break;
+        }
+      }
+    }
+    return out;
+  }
+
   record(
     sourceFile: string,
     targetLocale: string,

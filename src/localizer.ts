@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { copyFile, readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline/promises';
 import {
   COPY_FROM_SOURCE,
   LOCALE_LANGUAGES,
@@ -72,6 +73,16 @@ class Progress {
   }
 }
 
+async function confirm(question: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(question);
+    return answer.trim().toLowerCase().startsWith('y');
+  } finally {
+    rl.close();
+  }
+}
+
 export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
   const screenshotsDir = join(opts.fastlaneDir, 'screenshots');
   const metadataDir = join(opts.fastlaneDir, 'metadata');
@@ -84,6 +95,13 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
   const sources = await discoverSources(screenshotsDir);
   const allLocales = await discoverLocales(metadataDir, opts.targetLocales);
   const ledger = await new Ledger(ledgerPath).load();
+
+  const explicitManualLocales = opts.manualLocales;
+  const ledgerManualLocales = ledger.getManualLocales();
+  const effectiveManualLocales = new Set<string>([
+    ...explicitManualLocales,
+    ...ledgerManualLocales,
+  ]);
 
   const provider = opts.dryRun
     ? null
@@ -117,6 +135,12 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
         : '(none of the selected locales qualify)';
     console.log(`People swap enabled for: ${list}`);
   }
+  const autoProtected = [...ledgerManualLocales]
+    .filter((l) => !explicitManualLocales.has(l))
+    .sort();
+  if (autoProtected.length > 0) {
+    console.log(`Auto-protected manual locales (from ledger): ${autoProtected.join(', ')}`);
+  }
   console.log();
 
   // Bucket locales
@@ -136,10 +160,10 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
   generateLocales = generateLocales.filter((l) => !sharedTargets.has(l));
 
   // Manual locales bypass other phases
-  if (opts.manualLocales.size > 0) {
-    copyLocales = copyLocales.filter((l) => !opts.manualLocales.has(l));
-    generateLocales = generateLocales.filter((l) => !opts.manualLocales.has(l));
-    sharedCopyPairs = sharedCopyPairs.filter(([, c]) => !opts.manualLocales.has(c));
+  if (effectiveManualLocales.size > 0) {
+    copyLocales = copyLocales.filter((l) => !effectiveManualLocales.has(l));
+    generateLocales = generateLocales.filter((l) => !effectiveManualLocales.has(l));
+    sharedCopyPairs = sharedCopyPairs.filter(([, c]) => !effectiveManualLocales.has(c));
   }
 
   // Phase 0: manual marks
@@ -181,16 +205,57 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
 
   // Phase 2: API generation
   if (generateLocales.length > 0) {
+    const perLocaleCounts = new Map<string, number>();
+    for (const locale of generateLocales) {
+      const variant = variantFor(locale, opts.people);
+      const targetDir = join(screenshotsDir, locale);
+      let n = 0;
+      for (const source of sources) {
+        const upToDate =
+          !opts.force &&
+          ledger.isUpToDate(source.name, locale, source.hash, variant) &&
+          existsSync(join(targetDir, source.name));
+        if (!upToDate) n++;
+      }
+      perLocaleCounts.set(locale, n);
+    }
+
+    const totalToGenerate = [...perLocaleCounts.values()].reduce((a, b) => a + b, 0);
+    const localeWidth = Math.max(...generateLocales.map((l) => l.length));
+
+    console.log('Pre-flight (Phase 2 — API generation):');
+    for (const locale of generateLocales) {
+      const n = perLocaleCounts.get(locale) ?? 0;
+      const padded = locale.padEnd(localeWidth);
+      if (n === 0) {
+        console.log(`  ${padded}  0 screenshots          (all up to date)`);
+      } else {
+        const cost = n * pricePerImage;
+        console.log(
+          `  ${padded}  ${n} screenshots × $${pricePerImage.toFixed(2)} = $${cost.toFixed(2)}`,
+        );
+      }
+    }
+    const totalCost = totalToGenerate * pricePerImage;
+    console.log(
+      `Total: ${totalToGenerate} screenshots across ${generateLocales.length} locales = $${totalCost.toFixed(2)}`,
+    );
+    console.log();
+
+    const needsPrompt = totalToGenerate > 0 && !opts.dryRun && process.stdin.isTTY;
+    if (needsPrompt) {
+      const ok = await confirm('Proceed? [y/N] ');
+      console.log();
+      if (!ok) {
+        console.log('Aborted by user.');
+        return;
+      }
+    }
+
     const totalGenerate = generateLocales.length * sources.length;
     const progress = new Progress(totalGenerate);
     const mode = opts.sequential ? 'sequentially' : 'in parallel';
-    console.log(
-      `Generating translations for ${generateLocales.length} locales (${totalGenerate} screenshots) ${mode}`,
-    );
-    const costEst = totalGenerate * pricePerImage;
-    console.log(
-      `Estimated cost: ~$${costEst.toFixed(2)} ($${pricePerImage.toFixed(2)} × ${totalGenerate})`,
-    );
+    console.log(`Generating across ${generateLocales.length} locales ${mode}`);
     console.log();
 
     const work = generateLocales.map((locale) => async () => {
