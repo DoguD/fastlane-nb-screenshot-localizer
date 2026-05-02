@@ -7,6 +7,7 @@ interface RawOpts {
   pro: boolean;
   dryRun: boolean;
   locale?: string[];
+  index?: string[];
   force: boolean;
   sequential: boolean;
   rateLimit: string;
@@ -33,6 +34,14 @@ async function main(): Promise<void> {
     .option(
       '--locale <code>',
       'Restrict to this locale (repeatable)',
+      collect,
+      [] as string[],
+    )
+    .option(
+      '--index <n>',
+      'Restrict to source screenshots whose filename starts with this ' +
+        'integer (e.g. 0 matches 0_APP_IPHONE_65_0.jpg). Repeatable. ' +
+        'Intersects with --locale, --people, --force, etc.',
       collect,
       [] as string[],
     )
@@ -74,6 +83,8 @@ async function main(): Promise<void> {
     fail(`--rate-limit must be a positive integer (got "${opts.rateLimit}")`);
   }
 
+  const indexFilter = parseIndexFilter(opts.index);
+
   const options: LocalizerOptions = {
     fastlaneDir,
     providerName: provider.name,
@@ -84,6 +95,7 @@ async function main(): Promise<void> {
     sequential: opts.sequential,
     rateLimitRpm,
     targetLocales: opts.locale && opts.locale.length > 0 ? opts.locale : null,
+    indexFilter,
     manualLocales: new Set(opts.manual ?? []),
     people: opts.people,
     keepTerms: opts.keep ?? [],
@@ -123,6 +135,19 @@ function resolveProvider(opts: RawOpts): { name: ProviderName; apiKey: string } 
 
 function collect(value: string, prev: string[]): string[] {
   return prev.concat([value]);
+}
+
+function parseIndexFilter(raw: string[] | undefined): number[] | null {
+  if (!raw || raw.length === 0) return null;
+  const out = new Set<number>();
+  for (const value of raw) {
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      fail(`--index must be a non-negative integer (got "${value}")`);
+    }
+    out.add(parseInt(trimmed, 10));
+  }
+  return [...out].sort((a, b) => a - b);
 }
 
 function fail(message: string): never {
