@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { resolve } from 'node:path';
 import { Command, Option } from 'commander';
 import { runLocalizer, resolveFastlaneDir, type LocalizerOptions } from './localizer.js';
 import type { ProviderName } from './types.js';
@@ -16,6 +17,7 @@ interface RawOpts {
   eachApiKey?: string;
   falApiKey?: string;
   fastlaneDir?: string;
+  path?: string;
   verbose: boolean;
 }
 
@@ -61,6 +63,10 @@ async function main(): Promise<void> {
     .option('--each-api-key <key>', 'Use eachlabs with this key (selects eachlabs)')
     .option('--fal-api-key <key>', 'Use fal.ai with this key (selects fal)')
     .option('--fastlane-dir <path>', 'Override fastlane-dir auto-detection')
+    .option(
+      '--path <dir>',
+      'Override screenshots directory (relative to cwd). Defaults to <fastlane-dir>/screenshots.',
+    )
     .option('--verbose', 'Extra logging', false);
 
   program.parse(process.argv);
@@ -74,8 +80,11 @@ async function main(): Promise<void> {
     fail(`--rate-limit must be a positive integer (got "${opts.rateLimit}")`);
   }
 
+  const screenshotsDir = opts.path ? resolve(opts.path) : undefined;
+
   const options: LocalizerOptions = {
     fastlaneDir,
+    screenshotsDir,
     providerName: provider.name,
     apiKey: provider.apiKey,
     pro: opts.pro,
