@@ -33,6 +33,7 @@ export interface LocalizerOptions {
   sequential: boolean;
   rateLimitRpm: number;
   targetLocales: string[] | null;
+  indexFilter: number[] | null;
   manualLocales: Set<string>;
   people: boolean;
   keepTerms: string[];
@@ -93,7 +94,8 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
     throw new Error(`metadata directory not found at ${metadataDir}`);
   }
 
-  const sources = await discoverSources(screenshotsDir);
+  const allSources = await discoverSources(screenshotsDir);
+  const sources = applyIndexFilter(allSources, opts.indexFilter);
   const allLocales = await discoverLocales(metadataDir, opts.targetLocales);
   const ledger = await new Ledger(ledgerPath).load();
 
@@ -126,7 +128,11 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
 
   console.log(`Provider: ${opts.providerName}`);
   console.log(`Model:    ${modelSlug}`);
-  console.log(`Source:   ${sources.length} screenshots in ${SOURCE_LOCALE}/`);
+  const sourceSuffix =
+    opts.indexFilter !== null
+      ? ` (filtered by --index ${opts.indexFilter.join(',')} from ${allSources.length} total)`
+      : '';
+  console.log(`Source:   ${sources.length} screenshots in ${SOURCE_LOCALE}/${sourceSuffix}`);
   console.log(`Target:   ${allLocales.length} locales`);
   if (opts.people) {
     const peopleLocales = allLocales.filter((l) => l in LOCALE_PEOPLE_TRAITS);
@@ -391,6 +397,38 @@ async function discoverLocales(
 
 function variantFor(locale: string, people: boolean): LedgerVariant {
   return people && locale in LOCALE_PEOPLE_TRAITS ? 'people' : 'default';
+}
+
+function applyIndexFilter(
+  sources: SourceInfo[],
+  indexFilter: number[] | null,
+): SourceInfo[] {
+  if (indexFilter === null) return sources;
+  const wanted = new Set(indexFilter);
+  const matched = new Set<number>();
+  const filtered: SourceInfo[] = [];
+  for (const source of sources) {
+    const m = /^(\d+)/.exec(source.name);
+    if (!m) continue;
+    const idx = parseInt(m[1], 10);
+    if (wanted.has(idx)) {
+      matched.add(idx);
+      filtered.push(source);
+    }
+  }
+  const unmatched = indexFilter.filter((i) => !matched.has(i));
+  if (unmatched.length > 0) {
+    console.log(
+      `WARNING: --index value(s) matched no source filenames: ${unmatched.join(', ')}`,
+    );
+  }
+  if (filtered.length === 0) {
+    throw new Error(
+      `No screenshots match --index ${indexFilter.join(',')} ` +
+        `(source filenames must start with one of these integers).`,
+    );
+  }
+  return filtered;
 }
 
 // ---------------------------------------------------------------------------
