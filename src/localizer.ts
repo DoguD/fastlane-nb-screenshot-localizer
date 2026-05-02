@@ -24,6 +24,7 @@ import type { LedgerVariant, Provider, ProviderName } from './types.js';
 
 export interface LocalizerOptions {
   fastlaneDir: string;
+  screenshotsDir?: string;
   providerName: ProviderName;
   apiKey: string;
   pro: boolean;
@@ -85,7 +86,7 @@ async function confirm(question: string): Promise<boolean> {
 }
 
 export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
-  const screenshotsDir = join(opts.fastlaneDir, 'screenshots');
+  const screenshotsDir = opts.screenshotsDir ?? join(opts.fastlaneDir, 'screenshots');
   const metadataDir = join(opts.fastlaneDir, 'metadata');
   const ledgerPath = join(screenshotsDir, '.localization-ledger.json');
 

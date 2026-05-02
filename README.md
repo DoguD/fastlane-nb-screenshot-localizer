@@ -89,6 +89,7 @@ fastlane-nb-screenshot-localizer --fal-api-key=...
 | `--each-api-key <key>` | Use eachlabs with this key. |
 | `--fal-api-key <key>` | Use fal.ai with this key. |
 | `--fastlane-dir <path>` | Override fastlane-dir auto-detection. |
+| `--path <dir>` | Override the screenshots directory (relative to cwd). Defaults to `<fastlane-dir>/screenshots`. |
 | `--verbose` | Extra logging. |
 
 ## Cost
