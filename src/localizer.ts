@@ -280,6 +280,7 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
         appContext: opts.appContext,
         dryRun: opts.dryRun,
         force: opts.force,
+        verbose: opts.verbose,
       });
     });
 
@@ -510,6 +511,7 @@ interface ProcessLocaleArgs {
   appContext?: string;
   dryRun: boolean;
   force: boolean;
+  verbose: boolean;
 }
 
 async function processLocale(args: ProcessLocaleArgs): Promise<void> {
@@ -529,6 +531,10 @@ async function processLocale(args: ProcessLocaleArgs): Promise<void> {
     keepTerms: args.keepTerms,
     appContext: args.appContext,
   });
+  if (args.verbose) {
+    console.log(`  [${args.locale}] prompt (${prompt.length} chars):`);
+    console.log(prompt.replace(/^/gm, '    '));
+  }
   const variant = variantFor(args.locale, args.people);
 
   for (const source of args.sources) {
