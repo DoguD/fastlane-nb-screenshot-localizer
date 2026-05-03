@@ -1,6 +1,6 @@
 {
   "name": "fastlane-nb-screenshot-localizer",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Localize App Store screenshots in fastlane/ via Google's Nano Banana edit models. Supports both eachlabs.ai and fal.ai as providers.",
   "repository": {
     "type": "git",
