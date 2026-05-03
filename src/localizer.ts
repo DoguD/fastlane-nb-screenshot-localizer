@@ -37,6 +37,7 @@ export interface LocalizerOptions {
   manualLocales: Set<string>;
   people: boolean;
   keepTerms: string[];
+  appContext?: string;
   verbose: boolean;
 }
 
@@ -276,6 +277,7 @@ export async function runLocalizer(opts: LocalizerOptions): Promise<void> {
         progress,
         people: opts.people,
         keepTerms: opts.keepTerms,
+        appContext: opts.appContext,
         dryRun: opts.dryRun,
         force: opts.force,
       });
@@ -505,6 +507,7 @@ interface ProcessLocaleArgs {
   progress: Progress;
   people: boolean;
   keepTerms: string[];
+  appContext?: string;
   dryRun: boolean;
   force: boolean;
 }
@@ -524,6 +527,7 @@ async function processLocale(args: ProcessLocaleArgs): Promise<void> {
     localeCode: args.locale,
     peopleTraits,
     keepTerms: args.keepTerms,
+    appContext: args.appContext,
   });
   const variant = variantFor(args.locale, args.people);
 

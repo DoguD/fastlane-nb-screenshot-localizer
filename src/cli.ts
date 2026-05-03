@@ -1,8 +1,11 @@
 #!/usr/bin/env node
-import { resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { Command, Option } from 'commander';
 import { runLocalizer, resolveFastlaneDir, type LocalizerOptions } from './localizer.js';
 import type { ProviderName } from './types.js';
+
+const DEFAULT_CONTEXT_FILE = join('.context', 'ss_localization.md');
 
 interface RawOpts {
   pro: boolean;
@@ -19,6 +22,7 @@ interface RawOpts {
   falApiKey?: string;
   fastlaneDir?: string;
   path?: string;
+  contextFile?: string;
   verbose: boolean;
 }
 
@@ -76,6 +80,11 @@ async function main(): Promise<void> {
       '--path <dir>',
       'Override screenshots directory (relative to cwd). Defaults to <fastlane-dir>/screenshots.',
     )
+    .option(
+      '--context-file <path>',
+      'Override path to the app-specific rules file (relative to cwd). ' +
+        `Defaults to ${DEFAULT_CONTEXT_FILE}.`,
+    )
     .option('--verbose', 'Extra logging', false);
 
   program.parse(process.argv);
@@ -91,6 +100,7 @@ async function main(): Promise<void> {
 
   const indexFilter = parseIndexFilter(opts.index);
   const screenshotsDir = opts.path ? resolve(opts.path) : undefined;
+  const appContext = loadAppContext(opts.contextFile, opts.verbose);
 
   const options: LocalizerOptions = {
     fastlaneDir,
@@ -107,6 +117,7 @@ async function main(): Promise<void> {
     manualLocales: new Set(opts.manual ?? []),
     people: opts.people,
     keepTerms: opts.keep ?? [],
+    appContext,
     verbose: opts.verbose,
   };
 
@@ -139,6 +150,26 @@ function resolveProvider(opts: RawOpts): { name: ProviderName; apiKey: string } 
     'No API key found. Pass --each-api-key=<key> or --fal-api-key=<key>, ' +
       'or set EACHLABS_API_KEY or FAL_KEY in the environment.',
   );
+}
+
+function loadAppContext(override: string | undefined, verbose: boolean): string | undefined {
+  const explicit = typeof override === 'string' && override.trim().length > 0;
+  const path = resolve(explicit ? override.trim() : DEFAULT_CONTEXT_FILE);
+
+  if (!existsSync(path)) {
+    if (explicit) fail(`--context-file not found: ${path}`);
+    if (verbose) console.log(`App context: none (${DEFAULT_CONTEXT_FILE} not found)`);
+    return undefined;
+  }
+
+  const raw = readFileSync(path, 'utf8').trim();
+  if (raw.length === 0) {
+    if (verbose) console.log(`App context: empty file at ${path}, ignoring`);
+    return undefined;
+  }
+
+  if (verbose) console.log(`App context: loaded ${raw.length} chars from ${path}`);
+  return raw;
 }
 
 function collect(value: string, prev: string[]): string[] {

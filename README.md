@@ -90,7 +90,27 @@ fastlane-nb-screenshot-localizer --fal-api-key=...
 | `--fal-api-key <key>` | Use fal.ai with this key. |
 | `--fastlane-dir <path>` | Override fastlane-dir auto-detection. |
 | `--path <dir>` | Override the screenshots directory (relative to cwd). Defaults to `<fastlane-dir>/screenshots`. |
+| `--context-file <path>` | Override path to the app-specific rules file (relative to cwd). Defaults to `.context/ss_localization.md`. |
 | `--verbose` | Extra logging. |
+
+## App-specific prompt rules
+
+The built-in localization prompt is intentionally generic — it knows nothing about your app, its product names, its tone, or its UI vocabulary. If you want extra rules layered on top (don't translate certain product names, enforce a tone, preserve custom UI strings, force a specific verb form, etc.), drop them into a markdown file and they'll be appended verbatim to every localization prompt.
+
+- Default location: `.context/ss_localization.md` under the directory you run the CLI from.
+- Override with `--context-file <path>`.
+- If the default file is missing, the tool runs as before. If you pass `--context-file` and the file is missing, the run errors out.
+
+Example `.context/ss_localization.md`:
+
+```markdown
+- The product name is "MyApp Pro" — never translate it, never abbreviate it.
+- The hero headline must always start with a verb in the imperative mood.
+- Treat the word "Streak" as a feature name; keep the English spelling.
+- For Japanese specifically, use polite-form (です/ます) verbs.
+```
+
+The contents are appended verbatim under an `Additional app-specific rules:` heading at the end of the prompt sent to the model. Keep it concise — the prompt window is finite, and every line costs tokens on every screenshot.
 
 ## Cost
 

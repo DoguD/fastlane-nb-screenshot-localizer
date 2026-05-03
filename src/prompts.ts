@@ -3,10 +3,11 @@ export interface BuildPromptOptions {
   localeCode: string;
   peopleTraits?: string | null;
   keepTerms?: string[];
+  appContext?: string;
 }
 
 export function buildPrompt(opts: BuildPromptOptions): string {
-  const { language, localeCode, peopleTraits, keepTerms } = opts;
+  const { language, localeCode, peopleTraits, keepTerms, appContext } = opts;
 
   const keepClause =
     keepTerms && keepTerms.length > 0
@@ -50,6 +51,11 @@ export function buildPrompt(opts: BuildPromptOptions): string {
     prompt += ' Use Simplified Chinese characters.';
   } else if (localeCode === 'zh-Hant') {
     prompt += ' Use Traditional Chinese characters.';
+  }
+
+  const trimmedContext = appContext?.trim();
+  if (trimmedContext) {
+    prompt += `\n\nAdditional app-specific rules:\n${trimmedContext}`;
   }
 
   return prompt;
