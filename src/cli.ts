@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Command, Option } from 'commander';
 import { runLocalizer, resolveFastlaneDir, type LocalizerOptions } from './localizer.js';
+import { runReview } from './review/server.js';
 import type { ProviderName } from './types.js';
 
 const DEFAULT_CONTEXT_FILE = join('.context', 'ss_localization.md');
@@ -24,6 +25,8 @@ interface RawOpts {
   path?: string;
   contextFile?: string;
   verbose: boolean;
+  review: boolean;
+  reviewOnly: boolean;
 }
 
 async function main(): Promise<void> {
@@ -85,10 +88,32 @@ async function main(): Promise<void> {
       'Override path to the app-specific rules file (relative to cwd). ' +
         `Defaults to ${DEFAULT_CONTEXT_FILE}.`,
     )
-    .option('--verbose', 'Extra logging', false);
+    .option('--verbose', 'Extra logging', false)
+    .option(
+      '--review',
+      'After the run, open a local webview to approve/revert each changed screenshot (uses git)',
+      false,
+    )
+    .option(
+      '--review-only',
+      'Skip the localizer; just open the review webview for current uncommitted screenshot changes',
+      false,
+    );
 
   program.parse(process.argv);
   const opts = program.opts<RawOpts>();
+
+  if (opts.review && opts.reviewOnly) {
+    console.log('Note: --review and --review-only both set; running --review-only.');
+  }
+
+  if (opts.reviewOnly) {
+    const dir = opts.path
+      ? resolve(opts.path)
+      : join(resolveFastlaneDir(process.cwd(), opts.fastlaneDir), 'screenshots');
+    await runReview({ screenshotsDir: dir });
+    return;
+  }
 
   const provider = resolveProvider(opts);
 
@@ -122,6 +147,11 @@ async function main(): Promise<void> {
   };
 
   await runLocalizer(options);
+
+  if (opts.review) {
+    const reviewDir = screenshotsDir ?? join(fastlaneDir, 'screenshots');
+    await runReview({ screenshotsDir: reviewDir });
+  }
 }
 
 function resolveProvider(opts: RawOpts): { name: ProviderName; apiKey: string } {

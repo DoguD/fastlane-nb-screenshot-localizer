@@ -92,6 +92,8 @@ fastlane-nb-screenshot-localizer --fal-api-key=...
 | `--path <dir>` | Override the screenshots directory (relative to cwd). Defaults to `<fastlane-dir>/screenshots`. |
 | `--context-file <path>` | Override path to the app-specific rules file (relative to cwd). Defaults to `.context/ss_localization.md`. |
 | `--verbose` | Extra logging. |
+| `--review` | After the run, open a local webview to approve/revert each changed screenshot (uses git). |
+| `--review-only` | Skip the localizer; just open the review webview for current uncommitted screenshot changes. |
 
 ## App-specific prompt rules
 
@@ -111,6 +113,14 @@ Example `.context/ss_localization.md`:
 ```
 
 The contents are appended verbatim under an `Additional app-specific rules:` heading at the end of the prompt sent to the model. Keep it concise — the prompt window is finite, and every line costs tokens on every screenshot.
+
+## Reviewing changes
+
+After a run, screenshots are written straight into `<screenshots>/<locale>/`, overwriting whatever was there. To eyeball each change before committing, pass `--review` and a tiny local server starts up in your browser with a side-by-side **before / after** for every modified, added, or deleted image (before = `git HEAD`, after = working tree). Click **Revert** to roll back individual files (`git checkout HEAD -- <path>`, or `rm` for new files), **Keep** to mark as reviewed, **All done** to shut down the server. Survivors get committed by you as usual.
+
+`--review-only` skips the localizer entirely and just opens the review UI for whatever is currently uncommitted under the screenshots directory — handy for revisiting an earlier run.
+
+Requires the screenshots directory to live inside a git repository.
 
 ## Cost
 
